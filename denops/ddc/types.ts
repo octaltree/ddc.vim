@@ -3,9 +3,31 @@ export { BaseFilter } from "./base/filter.ts";
 
 export type SourceName = string;
 
-export interface Custom {
-  source: Record<SourceName, SourceOptions>;
-  option: DdcOptions;
+export interface Context {
+  input: string;
+}
+
+export interface DdcOptions {
+  sources: SourceName[];
+  defaultMatchers: string[];
+  defaultSorters: string[];
+  defaultConverters: string[];
+  sourceOptions: Record<SourceName, Partial<SourceOptions>>;
+  sourceParams: Record<SourceName, Partial<Record<string, unknown>>>;
+  filterOptions: Record<string, Partial<FilterOptions>>;
+  filterParams: Record<string, Partial<Record<string, unknown>>>;
+}
+
+export interface SourceOptions {
+  mark: string;
+  matchers: string[];
+  sorters: string[];
+  converters: string[];
+}
+
+export interface FilterOptions {
+  // TODO: add options and remove placeholder
+  placeholder: void;
 }
 
 export interface Candidate {
@@ -24,30 +46,3 @@ export interface DdcCandidate extends Candidate {
   equal: boolean;
   source: SourceName;
 }
-
-export interface DdcOptions {
-  sources: Record<string, SourceName[]>;
-}
-
-export const defaultDdcOptions: DdcOptions = {
-  sources: {},
-};
-
-export interface Context {
-  input: string;
-  options: DdcOptions;
-}
-
-export interface SourceOptions {
-  mark: string;
-  matchers: string[];
-  sorters: string[];
-  converters: string[];
-}
-
-export const defaultSourceOptions: SourceOptions = {
-  mark: "",
-  matchers: [],
-  sorters: [],
-  converters: [],
-};
