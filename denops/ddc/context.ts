@@ -232,11 +232,15 @@ export class ContextBuilder {
     };
   }
 
+  async cacheWorld(denops: Denops, event: string): Promise<World> {
+    return await cacheWorld(denops, event);
+  }
+
   async createContext(
     denops: Denops,
     event: string,
   ): Promise<null | [Context, DdcOptions]> {
-    const world = await cacheWorld(denops, event);
+    const world = await this.cacheWorld(denops, event);
     if (this.lastWorld == world) return null;
     this.lastWorld = world;
     if (world.isLmap || world.changedByCompletion) {
@@ -346,6 +350,7 @@ Deno.test("mergeDdcOptions", () => {
       },
     },
   });
+  custom.patchBuffer(2, {});
   assertEquals(custom.get("typescript", 1), {
     defaultMatchers: [],
     defaultSorters: [],
@@ -365,6 +370,25 @@ Deno.test("mergeDdcOptions", () => {
       },
       "foo": {
         max: 200,
+      },
+    },
+  });
+  assertEquals(custom.get("typescript", 2), {
+    defaultMatchers: [],
+    defaultSorters: [],
+    defaultConverters: [],
+
+    sources: [],
+    sourceOptions: {},
+    filterOptions: {},
+    sourceParams: {
+      "around": {
+        maxSize: 300,
+      },
+    },
+    filterParams: {
+      "matcher_head": {
+        foo: 2,
       },
     },
   });
