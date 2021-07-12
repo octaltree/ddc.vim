@@ -1,4 +1,11 @@
-import { assertEquals, Denops, vars } from "./deps.ts";
+import {
+  assertEquals,
+  Denops,
+  isArray,
+  isObject,
+  isString,
+  vars,
+} from "./deps.ts";
 import { Context, DdcOptions, FilterOptions, SourceOptions } from "./types.ts";
 import { reduce } from "https://deno.land/x/itertools@v0.1.2/mod.ts";
 
@@ -9,6 +16,50 @@ import { reduce } from "https://deno.land/x/itertools@v0.1.2/mod.ts";
 type PartialMerge<T> = (a: Partial<T>, b: Partial<T>) => Partial<T>;
 type Merge<T> = (a: T, b: Partial<T>) => T;
 type Default<T> = () => T;
+//type Parse<T> = (x: unknown) => null | T;
+
+export function parseDdcOptions(x: unknown): null | Partial<DdcOptions> {
+  if (!isObject(x)) return null;
+  const ret: Partial<DdcOptions> = {};
+  if (isArray(x["sources"], isString)) x.sources = x["sources"];
+  if (isObject(x["source_options"])) {
+    x.sourceOptions = Object.fromEntries(
+      Object.entries(x["source_options"]).map((
+        [k, v],
+      ) => ([k, parseSourceOptions(v)]))
+        .filter(([_, v]) => v),
+    );
+  }
+  if (isObject(x["filter_options"])) {
+    x.filterOptions = Object.fromEntries(
+      Object.entries(x["filter_options"]).map((
+        [k, v],
+      ) => ([k, parseFilterOptions(v)]))
+        .filter(([_, v]) => v),
+    );
+  }
+  if (isObject(x["source_params"], isObject)) {
+    x.sourceParams = x["source_params"];
+  }
+  if (isObject(x["filter_params"], isObject)) {
+    x.filterParams = x["filter_params"];
+  }
+  return ret;
+}
+
+function parseSourceOptions(x: unknown): null | Partial<SourceOptions> {
+  if (!isObject(x)) return null;
+  const ret: Partial<SourceOptions> = {};
+  if (isString(x["mark"])) ret.mark = x["mark"];
+  if (isArray(x["matchers"], isString)) ret.matchers = x["matchers"];
+  if (isArray(x["sorters"], isString)) ret.sorters = x["sorters"];
+  if (isArray(x["converters"], isString)) ret.converters = x["converters"];
+  return ret;
+}
+
+function parseFilterOptions(x: unknown): null | Partial<FilterOptions> {
+  return x as Partial<FilterOptions>;
+}
 
 function partialOverwrite<T>(a: Partial<T>, b: Partial<T>): Partial<T> {
   return { ...a, ...b };

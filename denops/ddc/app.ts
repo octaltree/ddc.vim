@@ -1,6 +1,6 @@
-import { autocmd, Denops, ensureObject, vars } from "./deps.ts";
+import { autocmd, Denops, vars } from "./deps.ts";
 import { Ddc } from "./ddc.ts";
-import { ContextBuilder } from "./context.ts";
+import { ContextBuilder, parseDdcOptions } from "./context.ts";
 import { DdcOptions } from "./types.ts";
 
 type RegisterArg = {
@@ -22,22 +22,25 @@ export async function main(denops: Denops) {
       await ddc.registerSource(arg.path, arg.name);
     },
     patchGlobal(arg1: unknown): Promise<void> {
-      ensureObject(arg1);
-      const options = arg1 as Record<string, unknown>;
+      const maybeOptions = parseDdcOptions(arg1);
+      if (!maybeOptions) return Promise.reject();
+      const options = maybeOptions;
       contextBuilder.patchGlobal(options);
       return Promise.resolve();
     },
     patchFiletype(arg1: unknown, arg2: unknown): Promise<void> {
       const filetype = arg1 as string;
-      ensureObject(arg2);
-      const options = arg2 as Record<string, unknown>;
+      const maybeOptions = parseDdcOptions(arg2);
+      if (!maybeOptions) return Promise.reject();
+      const options = maybeOptions;
       contextBuilder.patchFiletype(filetype, options);
       return Promise.resolve();
     },
     patchBuffer(arg1: unknown, arg2: unknown): Promise<void> {
       const bufnr = arg1 as number;
-      ensureObject(arg2);
-      const options = arg2 as Record<string, unknown>;
+      const maybeOptions = parseDdcOptions(arg2);
+      if (!maybeOptions) return Promise.reject();
+      const options = maybeOptions;
       contextBuilder.patchBuffer(bufnr, options);
       return Promise.resolve();
     },
