@@ -1,6 +1,7 @@
 import { assertEquals, Denops, vars } from "./deps.ts";
 import { Context, DdcOptions, FilterOptions, SourceOptions } from "./types.ts";
 import { reduce } from "https://deno.land/x/itertools@v0.1.2/mod.ts";
+import { cacheWorld, initialWorld, isNegligible, World } from "./world.ts";
 
 // where
 // T: Object
@@ -168,71 +169,6 @@ class Custom {
   }
 }
 
-// Schema of the state of buffers, etc
-type World = {
-  bufnr: number;
-  filetype: string;
-  event: string;
-  mode: string;
-  input: string;
-  changedByCompletion: boolean;
-  isLmap: boolean;
-};
-
-function initialWorld(): World {
-  return {
-    bufnr: 0,
-    filetype: "",
-    event: "",
-    mode: "",
-    input: "",
-    changedByCompletion: false,
-    isLmap: false,
-  };
-}
-
-// Fetches current state
-async function cacheWorld(denops: Denops, event: string): Promise<World> {
-  const changedByCompletion: Promise<boolean> = (async () => {
-    const completedItem =
-      (await vars.v.get(denops, "completed_item")) as Record<string, unknown>;
-    return event == "TextChangedP" && Object.keys(completedItem).length != 0;
-  })();
-  const isLmap: Promise<boolean> = (async () => {
-    const iminsert =
-      (await denops.call("getbufvar", "%", "&iminsert")) as number;
-    return iminsert == 1;
-  })();
-  const mode: string = event == "InsertEnter"
-    ? "i"
-    : (await denops.call("mode")) as string;
-  const input: Promise<string> = (async () => {
-    return (await denops.call("ddc#get_input", mode)) as string;
-  })();
-  const bufnr: Promise<number> = (async () => {
-    return (await denops.call("bufnr")) as number;
-  })();
-  const filetype: Promise<string> = (async () => {
-    return (await denops.call("getbufvar", "%", "&filetype")) as string;
-  })();
-  return {
-    bufnr: await bufnr,
-    filetype: await filetype,
-    event: event,
-    mode: mode,
-    input: await input,
-    changedByCompletion: await changedByCompletion,
-    isLmap: await isLmap,
-  };
-}
-
-// is neglect-able
-function isNegligible(older: World, newer: World): boolean {
-  return older.bufnr == newer.bufnr &&
-    older.filetype == newer.filetype &&
-    older.input == newer.input;
-}
-
 export class ContextBuilder {
   private lastWorld: World = initialWorld();
   private custom: Custom = new Custom();
@@ -278,17 +214,6 @@ export class ContextBuilder {
     this.custom.patchBuffer(bufnr, options);
   }
 }
-
-Deno.test("isNegligible", () => {
-  assertEquals(true, isNegligible(initialWorld(), initialWorld()));
-  assertEquals(
-    isNegligible(
-      { ...initialWorld(), input: "a" },
-      { ...initialWorld(), input: "ab" },
-    ),
-    false,
-  );
-});
 
 Deno.test("patchDdcOptions", () => {
   const custom = (new Custom())
